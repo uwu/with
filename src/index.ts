@@ -22,12 +22,13 @@ export function getFunctionBody(functionString: string): string | null {
 
 	// () => {...}
 	// function () {...}
-	if (/=>\s*?{/s.test(body) || body.startsWith("function")) {
-		return body.replace(/.*?{(.+)}/s, "$1");
+	if (/^=>\s*?{/s.test(body) || body.startsWith("function")) {
+		return body.replace(/^(?:=>|function)\s*?{(.+)}$/s, "$1");
 	}
 	// () => (...)
 	// () => ...
 	else if (body.startsWith("=>")) {
+		console.log("2");
 		return `return (${body.slice(2)})`;
 	}
 
