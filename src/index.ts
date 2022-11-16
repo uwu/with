@@ -1,5 +1,7 @@
 export const WITH_START_COMMENT = "/*$WITHSTART$*/";
 export const WITH_START_EVAL = `eval("${WITH_START_COMMENT}")`;
+// export const WITH_END_COMMENT = "/*$WITHSTART$*/";
+// export const WITH_END_EVAL = `eval("${}")`;
 
 export default function withWith<T extends object, Return>(
 	scope: T,
@@ -13,20 +15,31 @@ export default function withWith<T extends object, Return>(
 
 	// Check for eval version first since it contains the comment.
 	const wseIndex = cbString.indexOf(WITH_START_EVAL);
+	let wscIndex;
 	if (wseIndex !== -1) {
-		cbString = cbString.slice(
-			wseIndex + WITH_START_EVAL.length,
-			cbString.lastIndexOf("}")
-		);
-		// Handle transpilers commaifying expressions.
-		while (cbString.startsWith(",")) {
-			cbString = cbString.slice(1);
+		let startIndex = wseIndex;
+		let endChar = "";
+		while (startIndex > 0) {
+			if (cbString[startIndex] === "{") {
+				endChar = "}";
+				break;
+			}
+			if (cbString[startIndex] === "(") {
+				endChar = ")";
+				break;
+			}
+			startIndex--;
 		}
-	}
-
-	const wscIndex = cbString.indexOf(WITH_START_COMMENT);
-	if (wscIndex !== -1) {
-		cbString = cbString.slice(wscIndex, cbString.lastIndexOf("}"));
+		cbString = cbString.slice(
+			wseIndex + WITH_START_EVAL.length + 1,
+			cbString.lastIndexOf(endChar)
+		);
+		if (endChar === ")") {
+			cbString = `return (${cbString})`;
+		}
+	} // Only try the comment version if the eval version doesn't exist.
+	else if ((wscIndex = cbString.indexOf(WITH_START_COMMENT)) !== -1) {
+		cbString = cbString.slice(wscIndex - 1);
 	}
 
 	return new Function(`with(arguments[0]){${cbString}}`).bind(
