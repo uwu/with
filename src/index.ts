@@ -28,7 +28,6 @@ export function getFunctionBody(functionString: string): string | null {
 	// () => (...)
 	// () => ...
 	else if (body.startsWith("=>")) {
-		console.log("2");
 		return `return (${body.slice(2)})`;
 	}
 
