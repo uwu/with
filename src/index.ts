@@ -1,22 +1,28 @@
-export default function withWith<
-	T extends object,
-	Lifter extends (variable?: string) => unknown,
-	Return
->(
+export const WITH_START_COMMENT = "/*$WITHSTART$*/";
+export const WITH_START_EVAL = `eval("${WITH_START_COMMENT}")`;
+
+export default function withWith<T extends object, Return>(
 	scope: T,
-	cb: (lifter?: Lifter) => (scope: T) => Return,
+	cb: () => (scope: T) => Return,
 	options?: {
-		lifter?: Lifter;
+		lifter?: (variable: string) => unknown;
 		binding?: object;
 	}
 ): Return {
-	let cbString = cb(options?.lifter).toString();
+	let cbString = cb().toString();
 
-	if (cbString.indexOf("/*$WITHSTART$*/")) {
+	// Check for eval version first since it contains the comment.
+	const wseIndex = cbString.indexOf(WITH_START_EVAL);
+	if (wseIndex !== -1) {
 		cbString = cbString.slice(
-			cbString.indexOf("/*$WITHSTART$*/"),
+			wseIndex + WITH_START_EVAL.length,
 			cbString.lastIndexOf("}")
 		);
+	}
+
+	const wscIndex = cbString.indexOf(WITH_START_COMMENT);
+	if (wscIndex !== -1) {
+		cbString = cbString.slice(wscIndex, cbString.lastIndexOf("}"));
 	}
 
 	return new Function(`with(arguments[0]){${cbString}}`).bind(
@@ -24,7 +30,10 @@ export default function withWith<
 	)(
 		new Proxy(scope, {
 			has(target, property) {
+				// Make all the scope's keys available in the new scope as variables.
 				if (Reflect.has(target, property)) return true;
+				// Make all the parent scope's variables available in the new scope.
+				// This only works is a lifter is passed and is working properly.
 				if (
 					"lifter" in (options ?? {}) &&
 					typeof property === "string" &&
@@ -35,12 +44,11 @@ export default function withWith<
 				return false;
 			},
 			get(target, property, receiver) {
-				if (
-					typeof property === "string" &&
-					!Object.hasOwn(target, property)
-				) {
+				// If it's not in the scope that was passed, get it from the parent scope.
+				if (typeof property === "string" && !(property in target)) {
 					return options?.lifter?.(property);
 				}
+				// Grab the variable from the passed scope.
 				return Reflect.get(target, property, receiver);
 			},
 		})

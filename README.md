@@ -25,30 +25,46 @@ Cry.
 ## Usage
 
 ```ts
-const inaccessible = true;
-const returnValue = withWith({ hello: "there" }, () => () => {
-	// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
-	console.log(hello); // Logs `there`.
+const accessible = true;
+const returnValue = withWith(
+	{ hello: "there" },
+	() =>
+		({ hello }) => {
+			// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
 
-	/*
-	 * Unlike in the real with statement, this will error because inaccessible does not exist within the scope.
-	 * Unfortunately it's impossible to replicate this feature.
-	 * To get around this, just pass all of the variables you need access to.
-	 */
-	console.log(inaccessible);
+			// This is required for with with to be able to get the contents of this function.
+			// Everything before this will not run.
+			// If you have the ability to make it not get removed by a transpiler, you can just use the comment `/*$WITHSTART$*/` instead.
+			eval("/*$WITHSTART$*/");
 
-	// You can return as well and it will get passed back to the upper scope.
-	return hello;
-});
+			// Logs `there`.
+			console.log("hello", hello);
+
+			// Variables from the parent scope are still accessible.
+			console.log("accessible", accessible);
+
+			// You can return as well and it will get passed back to the upper scope.
+			return hello;
+		},
+	// This lifter enables your with wrapped function to be able to access all variables from the parent scope.
+	{ lifter: (k) => eval(k) }
+);
+console.log(returnValue);
 ```
 
 ### Binding
 
 ```ts
-withWith({ hello: "there" }, () => function () {
-	console.log(this);
-}, { on: "this" });
-```
+withWith(
+	{ hello: "there" },
+	() =>
+		function () {
+			eval("/*$WITHSTART$*/");
+			console.log(this);
+		},
+	// No variables from the parent scope are accessed, so there's no need for a lifter.
+	{ binding: { on: "this" } }
+);```
 
 ## Why `() => () =>`?
 

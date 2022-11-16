@@ -1,30 +1,25 @@
-// @ts-nocheck
-
 import withWith from "./src";
 
-const dhjsk = {
-	a: "b",
-	b: (sub: string) => {
-		return `Hello, ${sub}!`;
-	},
-};
-
-console.log("before", dhjsk);
-
-console.log(
-	withWith(dhjsk, () => ({ a, b }) => {
-		a = "new";
-		return b("test");
-	})
+const accessible = true;
+const returnValue = withWith(
+	{ hello: "there" },
+	() =>
+		({ hello }) => {
+			eval("/*$WITHSTART$*/");
+			console.log("hello", hello);
+			console.log("accessible", accessible);
+			return hello;
+		},
+	{ lifter: (k) => eval(k) }
 );
-
-console.log("after", dhjsk);
+console.log(returnValue);
 
 withWith(
 	{ hello: "there" },
 	() =>
 		function () {
+			eval("/*$WITHSTART$*/");
 			console.log(this);
 		},
-	{ on: "this" }
+	{ binding: { on: "this" } }
 );
