@@ -1,7 +1,7 @@
 {
 	"name": "with-with",
-	"version": "1.0.0",
-	"description": "",
+	"version": "1.0.2",
+	"description": "A simple way to (almost) use the JavaScript `with` keyword in strict mode!",
 	"main": "dist/index.js",
 	"scripts": {
 		"prepublish": "tsc",
@@ -11,7 +11,7 @@
 	"keywords": [
 		"with"
 	],
-	"author": "",
+	"author": "i dont know um",
 	"license": "MIT",
 	"type": "module",
 	"devDependencies": {
@@ -24,6 +24,7 @@
 		"src",
 		"LICENSE",
 		"dist",
-		"tsconfig.json"
+		"tsconfig.json",
+		"windows_the_fender_11.png"
 	]
 }
