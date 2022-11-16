@@ -1,6 +1,6 @@
 # with with
 
-A simple way to (almost) use the JavaScript `with` keyword in strict mode!
+A simple way to (almost) use the JavaScript `with` statement in strict mode!
 
 This is not a sandbox do not use it as a sandbox do not try to make it a sandbox. We will try this and fail so you don't have to.
 
