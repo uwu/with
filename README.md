@@ -26,7 +26,7 @@ Cry.
 
 ```ts
 const inaccessible = true;
-withWith({ hello: "there" }, () => () => {
+const returnValue = withWith({ hello: "there" }, () => () => {
 	// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
 	console.log(hello); // Logs `there`.
 
@@ -36,6 +36,9 @@ withWith({ hello: "there" }, () => () => {
 	 * To get around this, just pass all of the variables you need access to.
 	 */
 	console.log(inaccessible);
+
+	// You can return as well and it will get passed back to the upper scope.
+	return hello;
 });
 ```
 

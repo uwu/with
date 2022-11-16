@@ -1,8 +1,8 @@
-export default function withWith<T>(
+export default function withWith<T, Return>(
 	scope: T,
-	cb: () => (scope: T) => void,
+	cb: () => (scope: T) => Return,
 	binding?: object
-) {
+): Return {
 	let cbString = cb().toString();
 
 	if (cbString.match(/{/gi).length > 1) {
@@ -14,7 +14,7 @@ export default function withWith<T>(
 		cbString.lastIndexOf("}")
 	);
 
-	new Function(`with(arguments[0]){${cbString}}`).bind(
+	return new Function(`with(arguments[0]){${cbString}}`).bind(
 		binding ?? globalThis
 	)(scope);
 }
