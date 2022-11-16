@@ -18,6 +18,10 @@ export default function withWith<T extends object, Return>(
 			wseIndex + WITH_START_EVAL.length,
 			cbString.lastIndexOf("}")
 		);
+		// Handle transpilers commaifying expressions.
+		while (cbString.startsWith(",")) {
+			cbString = cbString.slice(1);
+		}
 	}
 
 	const wscIndex = cbString.indexOf(WITH_START_COMMENT);

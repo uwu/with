@@ -5,8 +5,7 @@ const returnValue = withWith(
 	{ hello: "there" },
 	() =>
 		({ hello }) => {
-			eval("/*$WITHSTART$*/");
-			console.log("hello", hello);
+			eval("/*$WITHSTART$*/"), console.log("hello", hello);
 			console.log("accessible", accessible);
 			return hello;
 		},
