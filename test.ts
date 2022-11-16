@@ -14,12 +14,14 @@ const returnValue = withWith(
 );
 console.log(returnValue);
 
-withWith(
-	{ hello: "there" },
-	() =>
-		function () {
-			eval("/*$WITHSTART$*/");
-			console.log(this);
-		},
-	{ binding: { on: "this" } }
+console.log(
+	withWith(
+		{ hello: "there" },
+		() =>
+			function () {
+				eval("/*$WITHSTART$*/");
+				return this;
+			},
+		{ binding: { on: "this" } }
+	)
 );

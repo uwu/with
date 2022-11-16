@@ -1,7 +1,5 @@
 export const WITH_START_COMMENT = "/*$WITHSTART$*/";
 export const WITH_START_EVAL = `eval("${WITH_START_COMMENT}")`;
-// export const WITH_END_COMMENT = "/*$WITHSTART$*/";
-// export const WITH_END_EVAL = `eval("${}")`;
 
 export default function withWith<T extends object, Return>(
 	scope: T,
@@ -15,10 +13,12 @@ export default function withWith<T extends object, Return>(
 
 	// Check for eval version first since it contains the comment.
 	const wseIndex = cbString.indexOf(WITH_START_EVAL);
-	let wscIndex;
+	let wscIndex: number;
 	if (wseIndex !== -1) {
 		let startIndex = wseIndex;
 		let endChar = "";
+		// Iterate back and find the first valid opening character.
+		// No need to handle () => value because it can't happen.
 		while (startIndex > 0) {
 			if (cbString[startIndex] === "{") {
 				endChar = "}";
@@ -31,14 +31,18 @@ export default function withWith<T extends object, Return>(
 			startIndex--;
 		}
 		cbString = cbString.slice(
+			// Cut off the eval part. No need to run
 			wseIndex + WITH_START_EVAL.length + 1,
 			cbString.lastIndexOf(endChar)
 		);
+		// Add return statement since it won't return in this case.
+		// Also rewrap in parentheses just to be safe.
 		if (endChar === ")") {
 			cbString = `return (${cbString})`;
 		}
 	} // Only try the comment version if the eval version doesn't exist.
 	else if ((wscIndex = cbString.indexOf(WITH_START_COMMENT)) !== -1) {
+		// TODO: Ensure this works. Might have to do similar to the eval version.
 		cbString = cbString.slice(wscIndex - 1);
 	}
 
