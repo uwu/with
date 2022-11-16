@@ -1,5 +1,38 @@
-export const WITH_START_COMMENT = "/*$WITHSTART$*/";
-export const WITH_START_EVAL = `eval("${WITH_START_COMMENT}")`;
+export function getRenameMap(functionString: string): Record<string, string> {
+	// Minifiers can rename the unused args. Yay!
+	const typeArgs = functionString
+		.match(/\({(?<args>.*?)}\)/s)
+		?.groups?.args.replace(/\s/gs, "");
+
+	let renameMap = {};
+	if (typeArgs != null) {
+		renameMap = typeArgs.split(",").reduce((acc, variable) => {
+			const oldName = variable.split(":")[0];
+			const newName = variable.split(":")[1] ?? variable.split(":")[0];
+			acc[newName] = oldName;
+			return acc;
+		}, {} as Record<string, string>);
+	}
+	return renameMap;
+}
+
+export function getFunctionBody(functionString: string): string | null {
+	// We can safely assume the the user is only destructuring.
+	const body = functionString.replace(/\((?<args>.*?)\)/s, "").trim();
+
+	// () => {...}
+	// function () {...}
+	if (/=>\s*?{/s.test(body) || body.startsWith("function")) {
+		return body.replace(/.*?{(.+)}/s, "$1");
+	}
+	// () => (...)
+	// () => ...
+	else if (body.startsWith("=>")) {
+		return `return (${body.slice(2)})`;
+	}
+
+	return null;
+}
 
 export default function withWith<T extends object, Return>(
 	scope: T,
@@ -11,66 +44,71 @@ export default function withWith<T extends object, Return>(
 ): Return {
 	let cbString = cb().toString();
 
-	// Check for eval version first since it contains the comment.
-	const wseIndex = cbString.indexOf(WITH_START_EVAL);
-	let wscIndex: number;
-	if (wseIndex !== -1) {
-		let startIndex = wseIndex;
-		let endChar = "";
-		// Iterate back and find the first valid opening character.
-		// No need to handle () => value because it can't happen.
-		while (startIndex > 0) {
-			if (cbString[startIndex] === "{") {
-				endChar = "}";
-				break;
-			}
-			if (cbString[startIndex] === "(") {
-				endChar = ")";
-				break;
-			}
-			startIndex--;
-		}
-		cbString = cbString.slice(
-			// Cut off the eval part. No need to run
-			wseIndex + WITH_START_EVAL.length + 1,
-			cbString.lastIndexOf(endChar)
-		);
-		// Add return statement since it won't return in this case.
-		// Also rewrap in parentheses just to be safe.
-		if (endChar === ")") {
-			cbString = `return (${cbString})`;
-		}
-	} // Only try the comment version if the eval version doesn't exist.
-	else if ((wscIndex = cbString.indexOf(WITH_START_COMMENT)) !== -1) {
-		// TODO: Ensure this works. Might have to do similar to the eval version.
-		cbString = cbString.slice(wscIndex - 1);
-	}
+	const renameMap = getRenameMap(cbString);
+	const functionBody = getFunctionBody(cbString);
 
-	return new Function(`with(arguments[0]){${cbString}}`).bind(
+	return new Function(`with(arguments[0]){${functionBody}}`).bind(
 		options?.binding ?? globalThis
 	)(
 		new Proxy(scope, {
 			has(target, property) {
 				// Make all the scope's keys available in the new scope as variables.
 				if (Reflect.has(target, property)) return true;
+				if (Reflect.has(renameMap, property)) return true;
+
 				// Make all the parent scope's variables available in the new scope.
 				// This only works is a lifter is passed and is working properly.
-				if (
-					"lifter" in (options ?? {}) &&
-					typeof property === "string" &&
-					options?.lifter?.(property) !== undefined
-				) {
-					return true;
+				if ("lifter" in (options ?? {}) && typeof property === "string") {
+					try {
+						if (options?.lifter?.(property) !== undefined) return true;
+					} catch {}
 				}
 				return false;
 			},
 			get(target, property, receiver) {
-				// If it's not in the scope that was passed, get it from the parent scope.
-				if (typeof property === "string" && !(property in target)) {
-					return options?.lifter?.(property);
+				// Try getting it from the rename map first.
+				if (typeof property === "string" && property in renameMap) {
+					property = renameMap[property] as string;
 				}
+
 				// Grab the variable from the passed scope.
-				return Reflect.get(target, property, receiver);
+				if (Reflect.has(target, property)) {
+					return Reflect.get(target, property, receiver);
+				}
+
+				// If it's not in the scope that was passed, get it from the parent scope.
+				if ("lifter" in (options ?? {}) && typeof property === "string") {
+					try {
+						return options?.lifter?.(property);
+					} catch {}
+				}
+			},
+			set(target, property, value, receiver) {
+				// Try getting it from the rename map first.
+				if (typeof property === "string" && property in renameMap) {
+					property = renameMap[property] as string;
+				}
+
+				// Grab the variable from the passed scope.
+				if (Reflect.has(target, property)) {
+					return Reflect.set(target, property, value, receiver);
+				}
+
+				// If it's not in the scope that was passed, get it from the parent scope.
+				if (
+					"lifter" in (options ?? {}) &&
+					typeof property === "string" &&
+					!(property in target)
+				) {
+					// Stringify value. This has caveats, but it's the best way I know of.
+					// Discourage setting objects directly since they can lose information.
+					// Encourage setting properties on objects instead.
+					try {
+						options?.lifter?.(`${property}=${JSON.stringify(value)}`);
+					} catch {}
+				}
+
+				return false;
 			},
 		})
 	);

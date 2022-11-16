@@ -25,23 +25,18 @@ Cry.
 ## Usage
 
 ```ts
-const accessible = true;
+let accessible = false;
 const returnValue = withWith(
 	{ hello: "there" },
 	() =>
 		({ hello }) => {
 			// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
 
-			// This is required to be the FIRST LINE OF CODE for with with to be able to get the contents of this function properly.
-			// This line will never actually run in your code.
-			// If you have the ability to make it not get removed by a transpiler, you can just use the comment `/*$WITHSTART$*/` instead.
-			eval("/*$WITHSTART$*/");
-
 			// Logs `there`.
 			console.log("hello", hello);
 
-			// Variables from the parent scope are still accessible.
-			console.log("accessible", accessible);
+			// Variables from the parent scope are still accessible and can be mutated.
+			accessible = true;
 
 			// You can return as well and it will get passed back to the upper scope.
 			return hello;
@@ -49,7 +44,7 @@ const returnValue = withWith(
 	// This lifter enables your with wrapped function to be able to access all variables from the parent scope.
 	{ lifter: (k) => eval(k) }
 );
-console.log(returnValue);
+console.log(returnValue, accessible);
 ```
 
 ### Binding
@@ -59,7 +54,6 @@ withWith(
 	{ hello: "there" },
 	() =>
 		function () {
-			eval("/*$WITHSTART$*/");
 			console.log(this);
 		},
 	// No variables from the parent scope are accessed, so there's no need for a lifter.
@@ -73,4 +67,4 @@ To get around duplicate variable names in subscopes, some JS engines *cough coug
 
 # Windows The Fender
 
-![](https://github.com/uwu/with/blob/master/windows_the_fender_11.png)
+<img src="https://github.com/uwu/with/blob/master/windows_the_fender_11.png" />
