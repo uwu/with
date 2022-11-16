@@ -1,6 +1,6 @@
 # with with
 
-A simple way to (almost) use the JavaScript `with` statement in strict mode!
+A simple way to use the JavaScript `with` statement in strict mode!
 
 This is not a sandbox do not use it as a sandbox do not try to make it a sandbox. We will try this and fail so you don't have to.
 
@@ -32,8 +32,8 @@ const returnValue = withWith(
 		({ hello }) => {
 			// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
 
-			// This is required for with with to be able to get the contents of this function.
-			// Everything before this will not run.
+			// This is required to be the FIRST LINE OF CODE for with with to be able to get the contents of this function properly.
+			// This line will never actually run in your code.
 			// If you have the ability to make it not get removed by a transpiler, you can just use the comment `/*$WITHSTART$*/` instead.
 			eval("/*$WITHSTART$*/");
 
@@ -64,7 +64,8 @@ withWith(
 		},
 	// No variables from the parent scope are accessed, so there's no need for a lifter.
 	{ binding: { on: "this" } }
-);```
+);
+```
 
 ## Why `() => () =>`?
 
