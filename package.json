@@ -24,7 +24,6 @@
 		"src",
 		"LICENSE",
 		"dist",
-		"tsconfig.json",
-		"windows_the_fender_11.png"
+		"tsconfig.json"
 	]
 }

@@ -58,7 +58,3 @@ withWith(
 	{ binding: { on: "this" } }
 );
 ```
-
-# Windows The Fender
-
-<img src="https://github.com/uwu/with/blob/master/windows_the_fender_11.png" />
