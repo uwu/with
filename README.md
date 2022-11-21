@@ -29,7 +29,7 @@ let accessible = false;
 const returnValue = withWith(
 	{ hello: "there" },
 	({ hello }) => {
-		// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
+		// You can get types via destructuring like `() => ({ hello, etc }) =>`.
 
 		// Logs `there`.
 		console.log("hello", hello);
