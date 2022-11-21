@@ -100,7 +100,7 @@ export default function withWith<T extends object, Return>(
 				if (
 					"lifter" in (options ?? {}) &&
 					typeof property === "string" &&
-					!(property in target)
+					!Reflect.has(target, property)
 				) {
 					// Stringify value. This has caveats, but it's the best way I know of.
 					// Discourage setting objects directly since they can lose information.
