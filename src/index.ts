@@ -34,15 +34,17 @@ export function getFunctionBody(functionString: string): string | null {
 	return null;
 }
 
+export type WithWithOptions = {
+	lifter?: (variable: string) => unknown;
+	binding?: object;
+};
+
 export default function withWith<T extends object, Return>(
 	scope: T,
-	cb: () => (scope: T) => Return,
-	options?: {
-		lifter?: (variable: string) => unknown;
-		binding?: object;
-	}
+	cb: (scope: T) => Return,
+	options?: WithWithOptions
 ): Return {
-	let cbString = cb().toString();
+	let cbString = cb.toString();
 
 	const renameMap = getRenameMap(cbString);
 	const functionBody = getFunctionBody(cbString);

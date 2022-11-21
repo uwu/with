@@ -28,19 +28,18 @@ Cry.
 let accessible = false;
 const returnValue = withWith(
 	{ hello: "there" },
-	() =>
-		({ hello }) => {
-			// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
+	({ hello }) => {
+		// You can get types via destructuring like `() => ({ hello, ...etc }) =>`.
 
-			// Logs `there`.
-			console.log("hello", hello);
+		// Logs `there`.
+		console.log("hello", hello);
 
-			// Variables from the parent scope are still accessible and can be mutated.
-			accessible = true;
+		// Variables from the parent scope are still accessible and can be mutated.
+		accessible = true;
 
-			// You can return as well and it will get passed back to the upper scope.
-			return hello;
-		},
+		// You can return as well and it will get passed back to the upper scope.
+		return hello;
+	},
 	// This lifter enables your with wrapped function to be able to access all variables from the parent scope.
 	{ lifter: (k) => eval(k) }
 );
@@ -52,18 +51,13 @@ console.log(returnValue, accessible);
 ```ts
 withWith(
 	{ hello: "there" },
-	() =>
-		function () {
-			console.log(this);
-		},
+	function () {
+		console.log(this);
+	},
 	// No variables from the parent scope are accessed, so there's no need for a lifter.
 	{ binding: { on: "this" } }
 );
 ```
-
-## Why `() => () =>`?
-
-To get around duplicate variable names in subscopes, some JS engines *cough cough v8* simply rename them and all the references. This breaks the binding to the orginal object when you destructure to make TypeScript happy.
 
 # Windows The Fender
 
