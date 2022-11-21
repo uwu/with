@@ -1,6 +1,6 @@
 {
 	"name": "with-with",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "A simple way to use the JavaScript `with` keyword in strict mode!",
 	"main": "dist/index.js",
 	"scripts": {

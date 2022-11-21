@@ -44,7 +44,7 @@ export default function withWith<T extends object, Return>(
 	cb: (scope: T) => Return,
 	options?: WithWithOptions
 ): Return {
-	let cbString = cb.toString();
+	const cbString = cb.toString();
 
 	const renameMap = getRenameMap(cbString);
 	const functionBody = getFunctionBody(cbString);
