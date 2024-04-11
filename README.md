@@ -2,7 +2,7 @@
 
 A simple way to use the JavaScript `with` statement in strict mode!
 
-This is not a sandbox do not use it as a sandbox do not try to make it a sandbox. ~~We will try this and fail so you don't have to.~~
+This is not a sandbox do not use it as a sandbox do not try to make it a sandbox. ~~We will try this and fail so you don't have to.~~ Done.
 
 Please don't use this in production... Or out of production... We just love doing things that make TC39 hire hitmen.
 
