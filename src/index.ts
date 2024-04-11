@@ -1,4 +1,13 @@
-export function getRenameMap(functionString: string): Record<string, string> {
+export function getFunctionArguments(functionString: string): string[] {
+	const args = functionString
+		.match(/(?:\((.*?)\))|(?:(.*?)\s*=>)/s)
+		?.filter((g, i) => g && i)[0];
+	return args ? args.split(",").map((arg) => arg.trim()) : [];
+}
+
+export function getRenameMap(
+	functionString: string
+): Map<string | symbol, string> {
 	// Minifiers can rename the unused args. Yay!
 	const typeArgs = functionString
 		.match(/\({(?<args>.*?)}\)/s)
@@ -13,7 +22,7 @@ export function getRenameMap(functionString: string): Record<string, string> {
 			return acc;
 		}, {} as Record<string, string>);
 	}
-	return renameMap;
+	return new Map(Object.entries(renameMap));
 }
 
 export function getFunctionBody(functionString: string): string | null {
@@ -34,43 +43,60 @@ export function getFunctionBody(functionString: string): string | null {
 	return null;
 }
 
-export type WithWithOptions = {
-	lifter?: (variable: string) => unknown;
-	binding?: object;
+export type EvalData = {
+	eval: string;
+	variable: string;
+	value?: unknown;
 };
 
-export default function withWith<T extends object, Return>(
-	scope: T,
-	cb: (scope: T) => Return,
-	options?: WithWithOptions
+export type WithWithOptions<T> = {
+	lifter?: (evalData: EvalData) => unknown;
+	binding?: T;
+};
+
+export default function withWith<Scope extends object, Return, Binding>(
+	scope: Scope,
+	callback: (this: Binding, scope: Scope) => Return,
+	options?: WithWithOptions<Binding>
 ): Return {
-	const cbString = cb.toString();
+	const lifterFirstArg = options?.lifter
+		? getFunctionArguments(options.lifter.toString())[0]
+		: "data";
+
+	const cbString = callback.toString();
 
 	const renameMap = getRenameMap(cbString);
 	const functionBody = getFunctionBody(cbString);
 
-	return new Function(`with(arguments[0]){${functionBody}}`).bind(
-		options?.binding ?? globalThis
-	)(
+	let f = new Function(`with(arguments[0]){${functionBody}}`);
+	if (Object.hasOwn(options ?? {}, "binding")) {
+		f = f.bind(options?.binding);
+	}
+
+	return f(
 		new Proxy(scope, {
 			has(target, property) {
 				// Make all the scope's keys available in the new scope as variables.
 				if (Reflect.has(target, property)) return true;
-				if (Reflect.has(renameMap, property)) return true;
+				if (renameMap.has(property)) return true;
 
 				// Make all the parent scope's variables available in the new scope.
 				// This only works is a lifter is passed and is working properly.
-				if ("lifter" in (options ?? {}) && typeof property === "string") {
-					try {
-						if (options?.lifter?.(property) !== undefined) return true;
-					} catch {}
+				if (options?.lifter && typeof property === "string") {
+					if (
+						options.lifter({
+							eval: property,
+							variable: property,
+						}) !== undefined
+					)
+						return true;
 				}
 				return false;
 			},
 			get(target, property, receiver) {
 				// Try getting it from the rename map first.
-				if (typeof property === "string" && property in renameMap) {
-					property = renameMap[property] as string;
+				if (typeof property === "string" && renameMap.has(property)) {
+					property = renameMap.get(property)!;
 				}
 
 				// Grab the variable from the passed scope.
@@ -79,16 +105,17 @@ export default function withWith<T extends object, Return>(
 				}
 
 				// If it's not in the scope that was passed, get it from the parent scope.
-				if ("lifter" in (options ?? {}) && typeof property === "string") {
-					try {
-						return options?.lifter?.(property);
-					} catch {}
+				if (options?.lifter && typeof property === "string") {
+					return options.lifter({
+						eval: property,
+						variable: property,
+					});
 				}
 			},
 			set(target, property, value, receiver) {
 				// Try getting it from the rename map first.
-				if (typeof property === "string" && property in renameMap) {
-					property = renameMap[property] as string;
+				if (typeof property === "string" && renameMap.has(property)) {
+					property = renameMap.get(property)!;
 				}
 
 				// Grab the variable from the passed scope.
@@ -98,16 +125,16 @@ export default function withWith<T extends object, Return>(
 
 				// If it's not in the scope that was passed, get it from the parent scope.
 				if (
-					"lifter" in (options ?? {}) &&
+					options?.lifter &&
 					typeof property === "string" &&
 					!Reflect.has(target, property)
 				) {
-					// Stringify value. This has caveats, but it's the best way I know of.
-					// Discourage setting objects directly since they can lose information.
-					// Encourage setting properties on objects instead.
-					try {
-						options?.lifter?.(`${property}=${JSON.stringify(value)}`);
-					} catch {}
+					// Send the value directly back to the parent scope.
+					options.lifter({
+						eval: `${property}=${lifterFirstArg}.value`,
+						variable: property,
+						value,
+					});
 				}
 
 				return false;
